@@ -1,0 +1,22 @@
+{
+  "name": "postgresql-connector",  
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector", 
+    "database.hostname": "postgres", 
+    "database.port": "5432", 
+    "database.user": "dbz_user", 
+    "database.password": "dbz_user", 
+    "database.dbname" : "restaurant_db", 
+    "topic.prefix": "restaurant",
+    "plugin.name": "pgoutput",
+    "table.include.list": "public.orders,public.order_items",
+    "publication.autocreate.mode": "disabled",
+    "publication.name": "dbz_publication",
+    "transforms": "unwrap",
+    "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+    "transforms.unwrap.add.fields": "op,table,ts_ms,db,source.ts_ms",
+    "transforms.unwrap.delete.handling.mode": "rewrite",
+    "transforms.unwrap.drop.tombstones": "true",
+    "decimal.handling.mode": "string"
+  }
+}

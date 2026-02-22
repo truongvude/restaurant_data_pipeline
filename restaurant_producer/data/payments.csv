@@ -1,0 +1,14 @@
+payment_id,payment_type,bank_name
+1,Cash,
+2,Card,Visa
+3,Card,Mastercard
+4,Card,Napas
+5,Bank,VCB
+6,Bank,MBBank
+7,Bank,Techcombank
+8,Bank,BIDV
+9,Bank,Agribank
+10,Bank,TPBank
+11,Bank,Vietinbank
+12,Bank,VPBank
+13,Bank,ACB
