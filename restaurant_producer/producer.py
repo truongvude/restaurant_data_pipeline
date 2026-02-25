@@ -49,7 +49,6 @@ def generate_orders(pool, products):
                             (customer_id, branch_id, total_amount, payment_id, status))
                 
                 order_id, create_time = cur.fetchone()
-                print(order_id, create_time)
                 num_items = random.randint(1, 5)
                 for _ in range(num_items):
                     item = generate_order_item(products)

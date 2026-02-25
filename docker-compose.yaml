@@ -99,8 +99,266 @@ services:
         -H "Content-Type: application/json" \
         -d @/connectors/connector.json || true
       '
+  minio:
+    image: minio/minio
+    ports:
+      # API port
+      - "9000:9000"
+      # UI port
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    command:
+      - "server"
+      - "/data"
+      - "--console-address"
+      - ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 1s
+      timeout: 10s
+    volumes:
+      - "minio-data:/data"
+  
+  init-bucket:
+    depends_on:
+      - minio
+    image: minio/mc
+    container_name: mc
+    environment:
+      - AWS_ACCESS_KEY_ID=minio
+      - AWS_SECRET_ACCESS_KEY=minio123
+      - AWS_REGION=us-east-1
+    volumes:
+      - ./minio/init-bucket.sh:/init-bucket.sh
+    entrypoint: sh ./init-bucket.sh
 
+  postgres-polaris:
+    image: postgres:17
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d polaris_db"]
+      interval: 5s
+      retries: 5
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: polaris_db
+    volumes:
+      - "postgres-polaris-volume:/var/lib/postgresql/data"
+
+  polaris:
+    image: apache/polaris:latest
+    ports:
+      # API port
+      - "8181:8181"
+      # Optional, allows attaching a debugger to the Polaris JVM
+      - "5005:5005"
+    depends_on:
+      minio:
+        condition: service_healthy
+      init-bucket:
+        condition: service_completed_successfully
+      postgres-polaris:
+        condition: service_healthy
+      polaris-bootstrap:
+        condition: service_completed_successfully
+    environment:
+      JAVA_DEBUG: true
+      JAVA_DEBUG_PORT: "*:5005"
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: minio
+      AWS_SECRET_ACCESS_KEY: minio123
+      POLARIS_BOOTSTRAP_CREDENTIALS: POLARIS,root,s3cr3t
+      POLARIS_REALM_CONTEXT_REALMS: POLARIS
+      QUARKUS_OTEK_SDK_DISABLED: true
+      POLARIS_PERSISTENCE_TYPE: relational-jdbc
+      QUARKUS_DATASOURCE_USERNAME: root
+      QUARKUS_DATASOURCE_PASSWORD: root
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres-polaris:5432/polaris_db
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8182/q/health"]
+      interval: 2s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+
+  polaris-bootstrap:
+    image: apache/polaris-admin-tool:latest
+    depends_on:
+      postgres-polaris:
+        condition: service_healthy
+    environment:
+      POLARIS_PERSISTENCE_TYPE: relational-jdbc
+      QUARKUS_DATASOURCE_USERNAME: root
+      QUARKUS_DATASOURCE_PASSWORD: root
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres-polaris:5432/polaris_db
+    command: 
+      - "bootstrap"
+      - "--realm=POLARIS"
+      - "--credential=POLARIS,root,s3cr3t"
+
+
+  polaris-setup:
+    image: alpine/curl:8.17.0
+    depends_on:
+      polaris:
+        condition: service_healthy
+      init-bucket:
+        condition: service_completed_successfully
+    environment:
+      - CLIENT_ID=root
+      - CLIENT_SECRET=s3cr3t
+    volumes:
+      - ./polaris/obtain-token.sh:/obtain-token.sh
+      - ./polaris/create-catalog.sh:/create-catalog.sh
+    entrypoint: "/bin/sh"
+    command:
+      - "-c"
+      - >-
+        source /obtain-token.sh &&
+        echo Creating catalog... &&
+        export STORAGE_CONFIG_INFO='{"storageType":"S3",
+          "endpoint":"http://minio:9000",
+          "endpointInternal":"http://minio:9000",
+          "pathStyleAccess":true}' &&
+        export STORAGE_LOCATION='s3://lakehouse' &&
+        sh /create-catalog.sh POLARIS $$TOKEN &&
+        echo Extra grants... &&
+        curl \
+          --fail-with-body \
+          -H "Authorization: Bearer $$TOKEN" \
+          -H 'Content-Type: application/json' \
+          -X PUT \
+          http://polaris:8181/api/management/v1/catalogs/prod/catalog-roles/catalog_admin/grants \
+          -d '{"type":"catalog", "privilege":"CATALOG_MANAGE_CONTENT"}' &&
+        echo Done. &&
+        touch /tmp/polaris-setup-done &&
+        tail -f /dev/null
+    healthcheck:
+      interval: 1s
+      timeout: 10s
+      retries: 240
+      test: ["CMD", "test", "-f", "/tmp/polaris-setup-done"]
+
+
+  spark-master:
+    # This is a standalone deployment mode for Apache Spark
+    build: ./spark/
+    container_name: spark-master
+    depends_on:
+      polaris:
+        condition: service_healthy
+    environment:
+      - SPARK_MODE=master
+    env_file:
+      - .env
+    ports:
+      - "8081:8080"
+      - "7077:7077"
+    command: bin/spark-class org.apache.spark.deploy.master.Master
+
+  spark-worker:
+    # This is a worker node for the standalone Spark cluster
+    build: ./spark/
+    container_name: spark-worker-1
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=5
+      - SPARK_WORKER_MEMORY=5g
+    env_file:
+      - .env
+    depends_on:
+      - spark-master
+
+  spark-worker-2:
+    # This is a worker node for the standalone Spark cluster
+    build: ./spark/
+    container_name: spark-worker-2
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=5
+      - SPARK_WORKER_MEMORY=5g
+    env_file:
+      - .env
+    depends_on:
+      - spark-master
+
+  init-lakehouse:
+    build: ./spark/
+    env_file:
+      - .env
+    depends_on:
+      - spark-worker-2
+    environment:
+      - SPARK_DRIVER_HOST=init-lakehouse
+    command: >
+      /opt/bitnami/spark/bin/spark-submit
+      --master spark://spark-master:7077
+      --deploy-mode client
+      --conf spark.ui.port=4042
+      --py-files /opt/bitnami/spark/spark-job/lib.zip
+      /opt/bitnami/spark/spark-job/init_lakehouse.py
+    volumes:
+      - ./src/spark-job:/opt/bitnami/spark/spark-job
+
+
+  streaming-bronze-orders:
+    build: ./spark/
+    depends_on:
+      init-lakehouse:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    ports:
+      - "4042:4042"
+    environment:
+      - SPARK_DRIVER_HOST=streaming-bronze-orders
+    command: >
+      /opt/bitnami/spark/bin/spark-submit
+      --master spark://spark-master:7077
+      --deploy-mode client
+      --conf spark.ui.port=4042
+      --py-files /opt/bitnami/spark/spark-job/lib.zip
+      --total-executor-cores 1
+      --executor-cores 1
+      /opt/bitnami/spark/spark-job/bronze/bronze_order_tables.py
+      --table orders
+      --kafka_bootstrap_servers broker:9092
+      --topic restaurant.public.orders
+    volumes:
+      - ./src/spark-job:/opt/bitnami/spark/spark-job
+
+  streaming-bronze-order-items:
+    build: ./spark/
+    depends_on:
+      init-lakehouse:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    ports:
+      - "4043:4042"
+    environment:
+      - SPARK_DRIVER_HOST=streaming-bronze-order-items
+    command: >
+      /opt/bitnami/spark/bin/spark-submit
+      --master spark://spark-master:7077
+      --deploy-mode client
+      --conf spark.ui.port=4042
+      --py-files /opt/bitnami/spark/spark-job/lib.zip
+      --total-executor-cores 1
+      --executor-cores 1
+      /opt/bitnami/spark/spark-job/bronze/bronze_order_tables.py
+      --table order_items
+      --kafka_bootstrap_servers broker:9092
+      --topic restaurant.public.order_items
+    volumes:
+      - ./src/spark-job:/opt/bitnami/spark/spark-job
 
 volumes:
   kafka-data:
   postgres-volume:
+  postgres-polaris-volume:
+  minio-data: 
