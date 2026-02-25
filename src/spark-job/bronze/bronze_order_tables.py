@@ -30,8 +30,8 @@ def main(spark, params):
         )
     )
 
-    df_bronze = df_raw.withColumn("ingest_ts", F.current_timestamp()) \
-        .withColumn("ingest_date", F.to_date(F.col("ingest_ts")))
+    df_bronze = df_raw.withColumn("ingest_ts", 
+                                  F.current_timestamp())
         
     query = df_bronze.writeStream \
         .foreachBatch(write_batch_to_iceberg(f"polaris.bronze.{table}")) \

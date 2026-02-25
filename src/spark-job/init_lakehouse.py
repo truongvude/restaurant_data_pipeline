@@ -15,11 +15,11 @@ def main(spark, config):
     spark.sql(bronze_orders_ddl)
     spark.sql(bronze_order_items_ddl)
     
-    load_bronze_dim_table(spark, config, "categories", F.current_date())
-    load_bronze_dim_table(spark, config, "branches", F.current_date())
-    load_bronze_dim_table(spark, config, "customers", F.current_date())
-    load_bronze_dim_table(spark, config, "payments", F.current_date())
-    load_bronze_dim_table(spark, config, "products", F.current_date())
+    load_bronze_dim_table(spark, config, "categories", F.current_timestamp())
+    load_bronze_dim_table(spark, config, "branches", F.current_timestamp())
+    load_bronze_dim_table(spark, config, "customers", F.current_timestamp())
+    load_bronze_dim_table(spark, config, "payments", F.current_timestamp())
+    load_bronze_dim_table(spark, config, "products", F.current_timestamp())
 
     print("Successfully init lakehouse!")  
 if __name__ == "__main__":

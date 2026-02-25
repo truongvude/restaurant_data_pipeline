@@ -10,9 +10,9 @@ bronze_customers_ddl = """
         customer_segment STRING,
         registration_date TIMESTAMP,
         updated_at TIMESTAMP,
-        ingest_date DATE
+        ingest_ts TIMESTAMP
         )
-    PARTITIONED BY (ingest_date)
+    PARTITIONED BY (days(ingest_ts))
     """
 
 bronze_branches_ddl = """
@@ -25,9 +25,9 @@ bronze_branches_ddl = """
         status STRING,
         created_at TIMESTAMP,
         updated_at TIMESTAMP,
-        ingest_date DATE
+        ingest_ts TIMESTAMP
         )
-    PARTITIONED BY (ingest_date)
+    PARTITIONED BY (days(ingest_ts))
     """
 
 bronze_categories_ddl = """
@@ -36,9 +36,9 @@ bronze_categories_ddl = """
         name STRING,
         created_at TIMESTAMP,
         updated_at TIMESTAMP,
-        ingest_date DATE
+        ingest_ts TIMESTAMP
         )
-    PARTITIONED BY (ingest_date)
+    PARTITIONED BY (days(ingest_ts))
     """
 
 bronze_payments_ddl = """
@@ -48,9 +48,9 @@ bronze_payments_ddl = """
         bank_name STRING,
         created_at TIMESTAMP,
         updated_at TIMESTAMP,
-        ingest_date DATE
+        ingest_ts TIMESTAMP
         )
-    PARTITIONED BY (ingest_date)
+    PARTITIONED BY (days(ingest_ts))
     """
 
 bronze_products_ddl = """
@@ -62,9 +62,9 @@ bronze_products_ddl = """
         category_id LONG,
         created_at TIMESTAMP,
         updated_at TIMESTAMP,
-        ingest_date DATE
+        ingest_ts TIMESTAMP
         )
-    PARTITIONED BY (ingest_date)
+    PARTITIONED BY (days(ingest_ts))
     """
 
 bronze_orders_ddl = """
@@ -75,9 +75,8 @@ bronze_orders_ddl = """
         partition INT,
         offset LONG,
         timestamp TIMESTAMP,
-        ingest_ts TIMESTAMP,
-        ingest_date DATE)
-    PARTITIONED BY (ingest_date)
+        ingest_ts TIMESTAMP)
+    PARTITIONED BY (days(ingest_ts))
     """
 
 bronze_order_items_ddl = """
@@ -88,7 +87,6 @@ bronze_order_items_ddl = """
         partition INT,
         offset LONG,
         timestamp TIMESTAMP,
-        ingest_ts TIMESTAMP,
-        ingest_date DATE)
-    PARTITIONED BY (ingest_date)
+        ingest_ts TIMESTAMP)
+    PARTITIONED BY (days(ingest_ts))
     """

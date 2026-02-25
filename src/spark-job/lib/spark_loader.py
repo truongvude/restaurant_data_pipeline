@@ -1,4 +1,4 @@
-def load_bronze_dim_table(spark, config, table_name, ingest_date):
+def load_bronze_dim_table(spark, config, table_name, ingest_ts):
     df_table = spark.read \
         .format("jdbc") \
         .option("url", config["url"]) \
@@ -8,7 +8,7 @@ def load_bronze_dim_table(spark, config, table_name, ingest_date):
         .option("dbtable", table_name) \
         .load()
     df_bronze = df_table \
-        .withColumn("ingest_date", ingest_date)
+        .withColumn("ingest_ts", ingest_ts)
     df_bronze.writeTo(f"bronze.{table_name}").overwritePartitions()
 
 def write_batch_to_iceberg(table_name):
