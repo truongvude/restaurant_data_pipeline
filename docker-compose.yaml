@@ -19,6 +19,7 @@ services:
           -c wal_level=logical
           -c max_replication_slots=10
           -c max_wal_senders=10
+          -c timezone=Asia/Ho_Chi_Minh
 
   restaurant-producer:
     build: 

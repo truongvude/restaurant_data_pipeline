@@ -5,11 +5,11 @@ from lib.spark_loader import load_bronze_dim_table
 def main(spark, config, params):
     ingest_ts = params.ingest_ts
 
+    load_bronze_dim_table(spark, config, "categories", ingest_ts)
     load_bronze_dim_table(spark, config, "customers", ingest_ts)
-    load_bronze_dim_table(spark, config, "customers", ingest_ts)
-    load_bronze_dim_table(spark, config, "customers", ingest_ts)
-    load_bronze_dim_table(spark, config, "customers", ingest_ts)
-    load_bronze_dim_table(spark, config, "customers", ingest_ts)
+    load_bronze_dim_table(spark, config, "branches", ingest_ts)
+    load_bronze_dim_table(spark, config, "payments", ingest_ts)
+    load_bronze_dim_table(spark, config, "products", ingest_ts)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
