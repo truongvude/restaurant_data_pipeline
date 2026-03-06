@@ -12,8 +12,8 @@ def main(spark, params):
         .format("iceberg") \
         .load("bronze.customers") \
         .where(
-            (F.col("ingest_ts") >= F.to_timestamp(F.lit(ingest_date))) &
-            (F.col("ingest_ts") < F.to_timestamp(F.date_add(F.to_date(F.lit(ingest_date)), 1)))
+            (F.col("ingest_date") >= F.lit(ingest_date)) &
+            (F.col("ingest_date") < F.date_add(F.to_date(F.lit(ingest_date)), 1))
         )
 
     df_customers_transformed_phone = transform_phone(df_customers, "phone")
@@ -31,7 +31,8 @@ def main(spark, params):
                 F.col("customer_segment"),
                 F.col("registration_date"),
                 F.col("updated_at"),
-                F.col("ingest_ts"))
+                F.col("ingest_ts"),
+                F.col("ingest_date"))
     
     merge_table_with_scd2(spark, df_customers_silver, "silver.customers_cleaned", "customer_id")
 

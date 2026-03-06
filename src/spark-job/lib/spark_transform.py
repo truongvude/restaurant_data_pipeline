@@ -3,7 +3,7 @@ from pyspark.sql import functions as F
 def parse_message(df, schema):
     df_parsed = df \
     .select(F.from_json(F.col("value"), schema).alias("data"), "*") \
-    .select("data.payload.*")
+    .select("data.payload.*", "ingest_ts", "ingest_date")
 
     return df_parsed
 

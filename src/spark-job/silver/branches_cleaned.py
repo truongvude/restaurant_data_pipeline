@@ -12,17 +12,27 @@ def main(spark, params):
         .format("iceberg") \
         .load("bronze.branches") \
         .where(
-            (F.col("ingest_ts") >= F.to_timestamp(F.lit(ingest_date))) &
-            (F.col("ingest_ts") < F.to_timestamp(F.date_add(F.to_date(F.lit(ingest_date)), 1)))
+            (F.col("ingest_date") >= F.lit(ingest_date)) &
+            (F.col("ingest_date") < F.date_add(F.to_date(F.lit(ingest_date)), 1))
         )
 
     df_branches_transformed_phone = transform_phone(df_branches, "phone")
     df_branches_cleaned = df_branches_transformed_phone \
         .drop_duplicates(subset=["branch_id"])
 
-
+    df_branches_silver = df_branches_cleaned \
+        .select(F.col("branch_id"),
+                F.col("name"),
+                F.col("city"),
+                F.col("address"),
+                F.col("phone"),
+                F.col("status"),
+                F.col("created_at"),
+                F.col("updated_at"),
+                F.col("ingest_ts"),
+                F.col("ingest_date"))
     
-    merge_table_with_scd2(spark, df_branches_cleaned, "silver.branches_cleaned", "branch_id")
+    merge_table_with_scd2(spark, df_branches_silver, "silver.branches_cleaned", "branch_id")
 
 
 if __name__ == "__main__":

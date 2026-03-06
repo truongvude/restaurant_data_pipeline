@@ -1,5 +1,5 @@
+import pendulum
 import os
-from datetime import datetime
 from airflow import DAG
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from airflow.sdk import task_group
@@ -9,11 +9,12 @@ SPARK_JOB_FOLDER = os.path.join(AIRFLOW_HOME, "spark-job")
 PY_FILE_LOCATION = os.path.join(SPARK_JOB_FOLDER, "lib.zip")
 KAFKA_BOOTSTRAP_SERVER = "kafka:9092"
 
+local_tz = pendulum.timezone("Asia/Ho_Chi_Minh")
+
 dag = DAG(
     dag_id="test_dag1",
-    start_date=datetime(2026, 3, 4),
-    end_date=datetime(2026, 3, 30),
-    schedule="@daily",
+    start_date=pendulum.datetime(2026, 3, 6, tz=local_tz),
+    schedule=None,
     max_active_runs=1
 )
 

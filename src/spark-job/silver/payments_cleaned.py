@@ -11,14 +11,24 @@ def main(spark, params):
         .format("iceberg") \
         .load("bronze.payments") \
         .where(
-            (F.col("ingest_ts") >= F.to_timestamp(F.lit(ingest_date))) &
-            (F.col("ingest_ts") < F.to_timestamp(F.date_add(F.to_date(F.lit(ingest_date)), 1)))
+            (F.col("ingest_date") >= F.lit(ingest_date)) &
+            (F.col("ingest_date") < F.date_add(F.to_date(F.lit(ingest_date)), 1))
         )
     
     df_payments_cleaned = df_payments \
         .drop_duplicates(subset=["payment_type", "bank_name"])
+    
 
-    merge_table_with_scd2(spark, df_payments_cleaned, "silver.payments_cleaned", "payment_id")
+    df_payments_silver = df_payments_cleaned \
+        .select(F.col("payment_id"),
+                F.col("payment_type"),
+                F.col("bank_name"),
+                F.col("created_at"),
+                F.col("updated_at"),
+                F.col("ingest_ts"),
+                F.col("ingest_date"))
+
+    merge_table_with_scd2(spark, df_payments_silver, "silver.payments_cleaned", "payment_id")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -12,8 +12,8 @@ def main(spark, params):
         .format("iceberg") \
         .load("bronze.products") \
         .where(
-            (F.col("ingest_ts") >= F.to_timestamp(F.lit(ingest_date))) &
-            (F.col("ingest_ts") < F.to_timestamp(F.date_add(F.to_date(F.lit(ingest_date)), 1)))
+            (F.col("ingest_date") >= F.lit(ingest_date)) &
+            (F.col("ingest_date") < F.date_add(F.to_date(F.lit(ingest_date)), 1))
         )
 
 
@@ -22,8 +22,8 @@ def main(spark, params):
         .format("iceberg") \
         .load("bronze.categories") \
         .where(
-            (F.col("ingest_ts") >= F.to_timestamp(F.lit(ingest_date))) &
-            (F.col("ingest_ts") < F.to_timestamp(F.date_add(F.to_date(F.lit(ingest_date)), 1)))
+            (F.col("ingest_date") >= F.lit(ingest_date)) &
+            (F.col("ingest_date") < F.date_add(F.to_date(F.lit(ingest_date)), 1))
         )
     
 
@@ -31,7 +31,12 @@ def main(spark, params):
     df_join = df_products \
         .join(df_categories, 
               df_products.category_id == df_categories.category_id,
-              how="left") \
+              how="left")
+
+    df_cleaned = df_join \
+        .drop_duplicates(subset=["product_id"])
+    
+    df_products_silver = df_cleaned \
         .select(df_products.product_id,
                 df_products.product_name,
                 df_products.price,
@@ -39,12 +44,10 @@ def main(spark, params):
                 df_categories.name.alias("category_name"),
                 df_products.created_at,
                 df_products.updated_at,
-                df_products.ingest_ts)
-
-    df_cleaned = df_join \
-        .drop_duplicates(subset=["product_id"])
+                df_products.ingest_ts,
+                df_products.ingest_date)
     
-    merge_table_with_scd2(spark, df_cleaned, "silver.products_cleaned", "product_id")
+    merge_table_with_scd2(spark, df_products_silver, "silver.products_cleaned", "product_id")
 
 
 if __name__ == "__main__":

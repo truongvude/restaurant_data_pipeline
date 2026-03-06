@@ -11,9 +11,10 @@ bronze_customers_ddl = """
         customer_segment STRING,
         registration_date TIMESTAMP,
         updated_at TIMESTAMP,
-        ingest_ts TIMESTAMP
+        ingest_ts TIMESTAMP,
+        ingest_date DATE
         )
-    PARTITIONED BY (days(ingest_ts))
+    PARTITIONED BY (ingest_date)
     """
 
 bronze_branches_ddl = """
@@ -26,9 +27,10 @@ bronze_branches_ddl = """
         status STRING,
         created_at TIMESTAMP,
         updated_at TIMESTAMP,
-        ingest_ts TIMESTAMP
+        ingest_ts TIMESTAMP,
+        ingest_date DATE
         )
-    PARTITIONED BY (days(ingest_ts))
+    PARTITIONED BY (ingest_date)
     """
 
 bronze_categories_ddl = """
@@ -37,9 +39,10 @@ bronze_categories_ddl = """
         name STRING,
         created_at TIMESTAMP,
         updated_at TIMESTAMP,
-        ingest_ts TIMESTAMP
+        ingest_ts TIMESTAMP,
+        ingest_date DATE
         )
-    PARTITIONED BY (days(ingest_ts))
+    PARTITIONED BY (ingest_date)
     """
 
 bronze_payments_ddl = """
@@ -49,9 +52,10 @@ bronze_payments_ddl = """
         bank_name STRING,
         created_at TIMESTAMP,
         updated_at TIMESTAMP,
-        ingest_ts TIMESTAMP
+        ingest_ts TIMESTAMP,
+        ingest_date DATE
         )
-    PARTITIONED BY (days(ingest_ts))
+    PARTITIONED BY (ingest_date)
     """
 
 bronze_products_ddl = """
@@ -63,9 +67,10 @@ bronze_products_ddl = """
         category_id LONG,
         created_at TIMESTAMP,
         updated_at TIMESTAMP,
-        ingest_ts TIMESTAMP
+        ingest_ts TIMESTAMP,
+        ingest_date DATE
         )
-    PARTITIONED BY (days(ingest_ts))
+    PARTITIONED BY (ingest_date)
     """
 
 bronze_orders_ddl = """
@@ -76,8 +81,9 @@ bronze_orders_ddl = """
         partition INT,
         offset LONG,
         timestamp TIMESTAMP,
-        ingest_ts TIMESTAMP)
-    PARTITIONED BY (days(ingest_ts))
+        ingest_ts TIMESTAMP,
+        ingest_date DATE)
+    PARTITIONED BY (ingest_date)
     """
 
 bronze_order_items_ddl = """
@@ -88,8 +94,9 @@ bronze_order_items_ddl = """
         partition INT,
         offset LONG,
         timestamp TIMESTAMP,
-        ingest_ts TIMESTAMP)
-    PARTITIONED BY (days(ingest_ts))
+        ingest_ts TIMESTAMP,
+        ingest_date DATE)
+    PARTITIONED BY (ingest_date)
     """
 
 silver_branches_ddl = """
@@ -103,6 +110,7 @@ silver_branches_ddl = """
         created_at TIMESTAMP,
         updated_at TIMESTAMP,
         ingest_ts TIMESTAMP,
+        ingest_date DATE,
         effective_from TIMESTAMP,
         effective_to TIMESTAMP,
         is_current BOOLEAN)
@@ -118,6 +126,7 @@ silver_products_ddl = """
         created_at TIMESTAMP,
         updated_at TIMESTAMP,
         ingest_ts TIMESTAMP,
+        ingest_date DATE,
         effective_from TIMESTAMP,
         effective_to TIMESTAMP,
         is_current BOOLEAN)
@@ -134,6 +143,7 @@ silver_customers_ddl = """
         registration_date TIMESTAMP,
         updated_at TIMESTAMP,
         ingest_ts TIMESTAMP,
+        ingest_date DATE,
         effective_from TIMESTAMP,
         effective_to TIMESTAMP,
         is_current BOOLEAN)
@@ -147,6 +157,7 @@ silver_payments_ddl = """
         created_at TIMESTAMP,
         updated_at TIMESTAMP,
         ingest_ts TIMESTAMP,
+        ingest_date DATE,
         effective_from TIMESTAMP,
         effective_to TIMESTAMP,
         is_current BOOLEAN)
@@ -161,7 +172,8 @@ silver_order_items_ddl = """
         unit_cost NUMERIC(10,0),
         unit_price NUMERIC(10,0),
         created_at TIMESTAMP,
-        ingest_ts TIMESTAMP
+        ingest_ts TIMESTAMP,
+        ingest_date DATE
         )
     PARTITIONED BY (days(created_at))
     """
@@ -171,12 +183,14 @@ silver_orders_ddl = """
         order_id LONG,
         customer_id LONG,
         branch_id LONG,
+        payment_id LONG,
         total_amount NUMERIC(12,0),
         created_at TIMESTAMP,
         completed_at TIMESTAMP,
         canceled_at TIMESTAMP,
-        status STRING,
-        ingest_ts TIMESTAMP
+        status_name STRING,
+        ingest_ts TIMESTAMP,
+        ingest_date DATE
         )
     PARTITIONED BY (days(created_at))
     """

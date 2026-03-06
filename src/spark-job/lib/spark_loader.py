@@ -1,3 +1,4 @@
+from pyspark.sql import functions as F
 def load_bronze_dim_table(spark, config, table_name, ingest_ts):
     df_table = spark.read \
         .format("jdbc") \
@@ -8,7 +9,8 @@ def load_bronze_dim_table(spark, config, table_name, ingest_ts):
         .option("dbtable", table_name) \
         .load()
     df_bronze = df_table \
-        .withColumn("ingest_ts", ingest_ts)
+        .withColumn("ingest_ts", ingest_ts) \
+        .withColumn("ingest_date", F.to_date(F.from_utc_timestamp("ingest_ts", "Asia/Ho_Chi_Minh")))
     df_bronze.writeTo(f"bronze.{table_name}").overwritePartitions()
 
 def write_batch_to_iceberg(table_name):
