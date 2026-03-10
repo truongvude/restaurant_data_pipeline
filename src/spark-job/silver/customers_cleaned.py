@@ -19,7 +19,7 @@ def main(spark, params):
     df_customers_transformed_phone = transform_phone(df_customers, "phone")
     df_customers_masked_phone = masked_phone(df_customers_transformed_phone, "phone")
     df_customers_cleaned = df_customers_masked_phone \
-        .dropna(subset=["customer_id", "name", "phone"], how="any") \
+        .dropna(subset=["customer_id"], how="any") \
         .drop_duplicates(subset=["customer_id"])
     
     df_customers_silver = df_customers_cleaned \
@@ -43,3 +43,4 @@ if __name__ == "__main__":
 
     spark = get_spark("silver_customers_cleaned")
     main(spark, args)
+    spark.stop()

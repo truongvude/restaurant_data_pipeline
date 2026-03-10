@@ -58,3 +58,4 @@ if __name__ == "__main__":
 
     spark = get_spark("silver_orders_cleaned")
     main(spark, args)
+    spark.stop()

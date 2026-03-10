@@ -43,7 +43,6 @@ def main(spark, params):
               ON o.order_items_id = s.order_items_id
               WHEN NOT MATCHED THEN INSERT *
               """)
-    print(df_silver.count())
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -52,3 +51,4 @@ if __name__ == "__main__":
 
     spark = get_spark("silver_order_items_cleaned")
     main(spark, args)
+    spark.stop()
