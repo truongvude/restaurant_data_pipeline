@@ -19,6 +19,7 @@ def main(spark, params):
     df_customers_transformed_phone = transform_phone(df_customers, "phone")
     df_customers_masked_phone = masked_phone(df_customers_transformed_phone, "phone")
     df_customers_cleaned = df_customers_masked_phone \
+        .fillna({"customer_segment": "no_segment"}) \
         .dropna(subset=["customer_id"], how="any") \
         .drop_duplicates(subset=["customer_id"])
     

@@ -88,7 +88,7 @@ def main():
     with pool.connection() as conn:
         products = get_product_data(conn)
     while True:
-        time.sleep(5)
+        # time.sleep(5)
         generate_orders(pool, products)
 
 if __name__ == "__main__":
