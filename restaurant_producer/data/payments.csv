@@ -1,5 +1,5 @@
 payment_id,payment_type,bank_name
-1,Cash,
+1,Cash,Cash
 2,Card,Visa
 3,Card,Mastercard
 4,Card,Napas

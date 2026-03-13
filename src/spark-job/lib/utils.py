@@ -20,6 +20,7 @@ def get_spark(app_name):
         .config("spark.sql.catalog.polaris.header.X-Iceberg-Access-Delegation","vended-credentials") \
         .config("spark.sql.catalog.polaris.credential", os.getenv("POLARIS_CREDENTIAL")) \
         .config("spark.sql.catalog.polaris.client.region","irrelevant") \
+        .config("spark.sql.defaultCatalog", os.getenv("SPARK_SQL_DEFAULT_CATALOG")) \
         .getOrCreate()
 
     return spark
